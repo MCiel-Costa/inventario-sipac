@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Inventário</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-container" style="flex-direction: column; text-align: center; border-bottom: none; gap: 0;">
+                <!-- Cole a sua imagem de logo na pasta 'docs' e mude o nome aqui se necessário -->
+                <img src="logo.png" alt="Logo DIMP-SESAP" style="max-width: 150px; margin-bottom: 0.5rem;" onerror="this.style.display='none'">
+                <div class="logo-text">
+                    DIMP<span>SESAP</span>
+                    <span class="logo-sub" style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 4px; font-weight: 500;">DESENVOLVIMENTO, IMPLANTAÇÃO<br>E MODERNIZAÇÃO DE PROCESSOS</span>
+                </div>
+            </div>
+            
+            <div class="filter-box" style="padding: 0;">
+                <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 1rem; font-family: 'Outfit', sans-serif;">Código</h3>
+                <input type="text" id="search-codigo" class="search-input" placeholder="Pesquisar código..." style="width: 100%;">
+                <div class="filter-list" id="list-codigo" style="max-height: 50vh;">
+                    <div style="padding: 10px; color: var(--text-secondary); font-size: 0.85rem;">Carregando...</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header com Imagem de Fundo (Cole sua imagem de fundo na pasta 'docs' e mude o nome aqui se necessário) -->
+            <div class="top-header" style="background-image: url('banner.png'); background-color: #4f46e5;">
+                <div class="header-overlay"></div>
+                <div class="header-titles">
+                    <h2>Inventário de Estoque</h2>
+                    <p>Visão geral de saldos por unidades e códigos</p>
+                </div>
+                <div class="theme-toggle" onclick="document.body.toggleAttribute('data-theme')">
+                    <span class="material-icons-round">dark_mode</span>
+                    Tema
+                </div>
+            </div>
+
+            <!-- Filtros Superiores (Unidades e Denominação) -->
+            <div class="filters-row glass">
+                <div class="filter-box">
+                    <h3>Unidades</h3>
+                    <input type="text" id="search-unidade" class="search-input" placeholder="Pesquisar unidade...">
+                    <div class="filter-list" id="list-unidade"></div>
+                </div>
+                <div class="filter-box" style="border-left: 1px solid var(--border-color);">
+                    <h3>Denominação</h3>
+                    <input type="text" id="search-denominacao" class="search-input" placeholder="Pesquisar denominação...">
+                    <div class="filter-list" id="list-denominacao"></div>
+                </div>
+            </div>
+
+            <!-- Dashboard Split Layout -->
+            <div class="dashboard-bottom">
+                <!-- KPIs (Esquerda) -->
+                <div class="kpi-column">
+                    <div class="kpi-card glass">
+                        <div class="kpi-icon-wrapper">
+                            <span class="material-icons-round">account_balance_wallet</span>
+                        </div>
+                        <div class="kpi-details">
+                            <h3>Soma de Saldo</h3>
+                            <div class="kpi-value" id="kpi-soma-saldo">0</div>
+                        </div>
+                    </div>
+                    
+                    <div class="kpi-card glass">
+                        <div class="kpi-icon-wrapper">
+                            <span class="material-icons-round">category</span>
+                        </div>
+                        <div class="kpi-details">
+                            <h3>Primeiro Unid. Medida</h3>
+                            <div class="kpi-value" id="kpi-unid-medida">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="kpi-card glass" style="justify-content: center; flex-direction: column; text-align: center; color: var(--text-secondary); gap: 0.5rem;" id="conn-status">
+                        <span class="material-icons-round" style="font-size: 28px;">sync</span>
+                        <div style="font-size: 14px; font-weight: 500;">Conectando...</div>
+                    </div>
+                </div>
+
+                <!-- Gráficos (Direita) -->
+                <div class="chart-container glass">
+                    <h3 class="section-title">Unidades com maiores estoques do Item</h3>
+                    <canvas id="estoqueChart"></canvas>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

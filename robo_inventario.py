@@ -19,7 +19,6 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 
 from selenium.webdriver.chrome.service import Service as ChromeService
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 
 print(">>> INICIANDO SCRIPT DE AUTOMAÇÃO (MODO CLOUD/FIREBASE) <<<")
@@ -52,7 +51,7 @@ try:
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--window-size=1920,1080')
 
-    servico = ChromeService(ChromeDriverManager().install())
+    servico = ChromeService()
     navegador = webdriver.Chrome(service=servico, options=chrome_options)
     wait = WebDriverWait(navegador, 60)
     

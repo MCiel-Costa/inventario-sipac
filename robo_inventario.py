@@ -1,5 +1,5 @@
 # ====================================================================================
-# SCRIPT DE AUTOMAÇÃO (v52 - Versão Automática para Agendador)
+# SCRIPT DE AUTOMAÇÃO (v53 - Versão Automática para Agendador)
 # ====================================================================================
 
 # --- 1. IMPORTAÇÃO DAS BIBLIOTECAS ---
@@ -8,6 +8,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
+from webdriver_manager.chrome import ChromeDriverManager
 import pandas as pd
 from io import StringIO
 from datetime import datetime
@@ -17,9 +20,6 @@ import os
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
-
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 
 print(">>> INICIANDO SCRIPT DE AUTOMAÇÃO (MODO CLOUD/FIREBASE) <<<")
 
@@ -54,10 +54,10 @@ try:
     chrome_options.add_argument('--blink-settings=imagesEnabled=false')
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-    # Usa o ChromeDriver instalado pelo GitHub Actions (ou o do sistema localmente)
-    chromedriver_path = os.environ.get("CHROMEDRIVER_PATH", "chromedriver")
-    print(f"Usando ChromeDriver em: {chromedriver_path}")
-    servico = ChromeService(executable_path=chromedriver_path)
+    # webdriver-manager detecta automaticamente a versão do Chrome instalado
+    # e baixa o ChromeDriver compatível — nunca terá incompatibilidade de versão
+    print("Baixando ChromeDriver compatível...")
+    servico = ChromeService(ChromeDriverManager().install())
     navegador = webdriver.Chrome(service=servico, options=chrome_options)
     navegador.set_page_load_timeout(120)
     navegador.implicitly_wait(20)
@@ -204,7 +204,6 @@ try:
             firebase_admin.initialize_app(cred)
 
         db = firestore.client()
-
         print(f"Enviando {len(registros)} registros para o Firebase...")
 
         batch = db.batch()

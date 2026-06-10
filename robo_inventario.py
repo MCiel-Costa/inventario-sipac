@@ -46,13 +46,16 @@ try:
     
     # Adicionando modo Headless para rodar na nuvem
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--headless=new')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('--window-size=1920,1080')
+    chrome_options.page_load_strategy = 'eager'
 
     servico = ChromeService()
     navegador = webdriver.Chrome(service=servico, options=chrome_options)
+    navegador.set_page_load_timeout(120)
     wait = WebDriverWait(navegador, 60)
     
     print("Acessando a página de login...")

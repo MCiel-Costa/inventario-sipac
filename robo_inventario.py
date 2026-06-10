@@ -44,17 +44,21 @@ try:
     # --- 2. CONFIGURAÇÃO E LOGIN ---
     print("Configurando o navegador...")
     
-    # Adicionando modo Headless para rodar na nuvem
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument('--headless')
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    chrome_options.add_argument('--disable-gpu')
-    chrome_options.add_argument('--window-size=1920,1080')
-    chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--remote-debugging-port=9222')
-    chrome_options.add_argument('--blink-settings=imagesEnabled=false') # Não carrega imagens para ser mais rápido
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+  # Adicionando modo Headless para rodar na nuvem
+chrome_options = webdriver.ChromeOptions()
+chrome_options.add_argument('--headless=new')           # <- era '--headless', use '=new'
+chrome_options.add_argument('--no-sandbox')
+chrome_options.add_argument('--disable-dev-shm-usage')
+chrome_options.add_argument('--disable-gpu')
+chrome_options.add_argument('--window-size=1920,1080')
+chrome_options.add_argument('--disable-extensions')
+chrome_options.add_argument('--blink-settings=imagesEnabled=false')
+chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+
+# Usa o ChromeDriver instalado pelo GitHub Actions (ou o do sistema localmente)
+chromedriver_path = os.environ.get("CHROMEDRIVER_PATH", "chromedriver")
+servico = ChromeService(executable_path=chromedriver_path)
+navegador = webdriver.Chrome(service=servico, options=chrome_options)
 
     servico = ChromeService()
     navegador = webdriver.Chrome(service=servico, options=chrome_options)

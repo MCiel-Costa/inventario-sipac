@@ -52,12 +52,14 @@ try:
     chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('--window-size=1920,1080')
     chrome_options.add_argument('--disable-extensions')
+    chrome_options.add_argument('--remote-debugging-port=9222')
     chrome_options.add_argument('--blink-settings=imagesEnabled=false') # Não carrega imagens para ser mais rápido
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
     servico = ChromeService()
     navegador = webdriver.Chrome(service=servico, options=chrome_options)
     navegador.set_page_load_timeout(120)
+    navegador.implicitly_wait(20)
     wait = WebDriverWait(navegador, 60)
     
     print("Acessando a página de login...")

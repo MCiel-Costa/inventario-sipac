@@ -1,15 +1,12 @@
 name: Automação SIPAC para Firebase
-
 on:
   schedule:
-    # Executa todos os dias às 06:00 (UTC) que é 03:00 no Brasil (Ajuste conforme necessário)
     - cron: '0 6 * * *'
-  workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub
+  workflow_dispatch:
 
 jobs:
   run-robot:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout do Repositório
       uses: actions/checkout@v4
@@ -21,19 +18,10 @@ jobs:
         cache: 'pip'
 
     - name: Setup Chrome + ChromeDriver
-  id: setup-chrome                          # <- id necessário para capturar o output
-  uses: browser-actions/setup-chrome@v1
-  with:
-    install-chromedriver: true              # <- instala driver compatível junto
-
-# Remova completamente o step "nanasess/setup-chromedriver@v2"
-
-- name: Executar Robô do Inventário
-  env:
-    SIPAC_USER: ${{ secrets.SIPAC_USER }}
-    SIPAC_PASSWORD: ${{ secrets.SIPAC_PASSWORD }}
-    CHROMEDRIVER_PATH: ${{ steps.setup-chrome.outputs.chromedriver-path }}  # <- passa o caminho
-  run: python robo_inventario.py
+      id: setup-chrome
+      uses: browser-actions/setup-chrome@v1
+      with:
+        install-chromedriver: true
 
     - name: Instalar Dependências
       run: |
@@ -48,6 +36,7 @@ jobs:
       env:
         SIPAC_USER: ${{ secrets.SIPAC_USER }}
         SIPAC_PASSWORD: ${{ secrets.SIPAC_PASSWORD }}
+        CHROMEDRIVER_PATH: ${{ steps.setup-chrome.outputs.chromedriver-path }}
       run: python robo_inventario.py
 
     - name: Limpar credencial do Firebase

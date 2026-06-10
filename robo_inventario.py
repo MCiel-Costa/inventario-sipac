@@ -42,7 +42,7 @@ try:
     URL_PRINCIPAL = 'https://sipac.rn.gov.br/sipac/portal/principal.jsf'
 
     # --- 2. CONFIGURAÇÃO E LOGIN ---
-    print("Configurando o navegador...")
+   print("Configurando o navegador...")
 
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument('--headless=new')
@@ -52,13 +52,24 @@ try:
     chrome_options.add_argument('--window-size=1920,1080')
     chrome_options.add_argument('--disable-extensions')
     chrome_options.add_argument('--blink-settings=imagesEnabled=false')
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    chrome_options.add_argument('--disable-blink-features=AutomationControlled')  # <- esconde que é bot
+    chrome_options.add_argument('--disable-infobars')
+    chrome_options.add_argument('--ignore-certificate-errors')                    # <- ignora erros SSL
+    chrome_options.add_argument('--allow-running-insecure-content')
+    chrome_options.add_argument('--disable-web-security')
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
+    chrome_options.add_experimental_option('useAutomationExtension', False)
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36")
 
-    # webdriver-manager detecta automaticamente a versão do Chrome instalado
-    # e baixa o ChromeDriver compatível — nunca terá incompatibilidade de versão
     print("Baixando ChromeDriver compatível...")
     servico = ChromeService(ChromeDriverManager().install())
     navegador = webdriver.Chrome(service=servico, options=chrome_options)
+    
+    # Esconde propriedades que identificam o Selenium
+    navegador.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+        'source': "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+    })
+    
     navegador.set_page_load_timeout(120)
     navegador.implicitly_wait(20)
     wait = WebDriverWait(navegador, 60)

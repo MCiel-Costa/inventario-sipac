@@ -2,8 +2,9 @@ name: Automação SIPAC para Firebase
 
 on:
   schedule:
+    # Executa todos os dias às 06:00 (UTC) que é 03:00 no Brasil (Ajuste conforme necessário)
     - cron: '0 6 * * *'
-  workflow_dispatch:
+  workflow_dispatch: # Permite rodar manualmente pelo painel do GitHub
 
 jobs:
   run-robot:
@@ -19,12 +20,18 @@ jobs:
         python-version: '3.11'
         cache: 'pip'
 
+    - name: Setup Chrome
+      uses: browser-actions/setup-chrome@v1
+
+    - name: Setup ChromeDriver
+      uses: nanasess/setup-chromedriver@v2
+
     - name: Instalar Dependências
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Criar arquivo de credencial
+    - name: Criar arquivo de credencial do Firebase temporário
       run: |
         echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > firebase_key.json
 
@@ -34,6 +41,6 @@ jobs:
         SIPAC_PASSWORD: ${{ secrets.SIPAC_PASSWORD }}
       run: python robo_inventario.py
 
-    - name: Limpar credencial
+    - name: Limpar credencial do Firebase
       if: always()
       run: rm -f firebase_key.json

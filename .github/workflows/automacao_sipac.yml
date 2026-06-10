@@ -17,11 +17,12 @@ jobs:
         python-version: '3.11'
         cache: 'pip'
 
-    - name: Setup Chrome + ChromeDriver
-      id: setup-chrome
-      uses: browser-actions/setup-chrome@v1
-      with:
-        install-chromedriver: true
+    - name: Instalar Google Chrome
+      run: |
+        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
 
     - name: Instalar Dependências
       run: |
@@ -36,7 +37,6 @@ jobs:
       env:
         SIPAC_USER: ${{ secrets.SIPAC_USER }}
         SIPAC_PASSWORD: ${{ secrets.SIPAC_PASSWORD }}
-        CHROMEDRIVER_PATH: ${{ steps.setup-chrome.outputs.chromedriver-path }}
       run: python robo_inventario.py
 
     - name: Limpar credencial do Firebase

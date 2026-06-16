@@ -1,5 +1,5 @@
 # ====================================================================================
-# SCRIPT DE AUTOMAÇÃO (v54 - Versão com Diagnóstico)
+# SCRIPT DE AUTOMAÇÃO (v51 - Versão Automática para Agendador)
 # ====================================================================================
 
 # --- 1. IMPORTAÇÃO DAS BIBLIOTECAS ---
@@ -8,9 +8,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
-from webdriver_manager.chrome import ChromeDriverManager
 import pandas as pd
 from io import StringIO
 from datetime import datetime
@@ -20,6 +17,10 @@ import os
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+
+import undetected_chromedriver as uc
+from pyvirtualdisplay import Display
+from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 
 print(">>> INICIANDO SCRIPT DE AUTOMAÇÃO (MODO CLOUD/FIREBASE) <<<")
 
@@ -35,7 +36,7 @@ def limpar_valor_numerico(valor):
             valor_str = valor_str.replace(',', '')
         return float(valor_str)
     except (ValueError, TypeError):
-        return 0.0
+        return 0.0 
 
 navegador = None
 try:
@@ -43,80 +44,49 @@ try:
 
     # --- 2. CONFIGURAÇÃO E LOGIN ---
     print("Configurando o navegador...")
-
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument('--headless=new')
+    
+    # Inicia o display virtual (Xvfb) para que o Chrome pense que tem uma tela real
+    # Isso burla a proteção antibot que detecta --headless
+    display = Display(visible=0, size=(1920, 1080))
+    display.start()
+    
+    chrome_options = uc.ChromeOptions()
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('--window-size=1920,1080')
     chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--blink-settings=imagesEnabled=false')
-    chrome_options.add_argument('--disable-blink-features=AutomationControlled')
-    chrome_options.add_argument('--disable-infobars')
-    chrome_options.add_argument('--ignore-certificate-errors')
-    chrome_options.add_argument('--allow-running-insecure-content')
-    chrome_options.add_argument('--disable-web-security')
-    chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
-    chrome_options.add_experimental_option('useAutomationExtension', False)
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36")
+    chrome_options.add_argument('--blink-settings=imagesEnabled=false') # Não carrega imagens para ser mais rápido
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-    print("Baixando ChromeDriver compatível...")
-    servico = ChromeService(ChromeDriverManager().install())
-    navegador = webdriver.Chrome(service=servico, options=chrome_options)
-
-    try:
-        navegador.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-            'source': "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-        })
-    except Exception:
-        pass
-
+    navegador = uc.Chrome(options=chrome_options)
     navegador.set_page_load_timeout(120)
     navegador.implicitly_wait(20)
     wait = WebDriverWait(navegador, 60)
-
+    
     print("Acessando a página de login...")
-    try:
-        navegador.get('https://sipac.rn.gov.br/sipac/?modo=classico')
-    except Exception as e:
-        print(f"Erro ao carregar página (capturado, seguindo para diagnóstico): {e}")
-
-    # ===== BLOCO DE DIAGNÓSTICO TEMPORÁRIO =====
-    try:
-        navegador.save_screenshot('debug_screenshot.png')
-        print("Screenshot de diagnóstico salva: debug_screenshot.png")
-    except Exception as e:
-        print(f"Não foi possível salvar screenshot: {e}")
-
-    try:
-        print(f"DIAGNÓSTICO - Título da página: {navegador.title}")
-        print(f"DIAGNÓSTICO - URL atual: {navegador.current_url}")
-        html_parcial = navegador.page_source[:500]
-        print(f"DIAGNÓSTICO - Primeiros 500 caracteres do HTML: {html_parcial}")
-    except Exception as e:
-        print(f"Não foi possível obter diagnóstico da página: {e}")
-    # ===== FIM DO BLOCO DE DIAGNÓSTICO =====
+    navegador.get('https://sipac.rn.gov.br/sipac/?modo=classico')
 
     usuario = os.environ.get('SIPAC_USER')
     senha = os.environ.get('SIPAC_PASSWORD')
-
+    
     if not usuario or not senha:
         raise ValueError("ERRO: Variáveis de ambiente SIPAC_USER ou SIPAC_PASSWORD não configuradas.")
-
+    
     print("Credenciais obtidas das variáveis de ambiente.")
 
     xpath_usuario = '//*[@id="conteudo"]/div[3]/form/table/tbody/tr[1]/td/input'
     xpath_senha = '//*[@id="conteudo"]/div[3]/form/table/tbody/tr[2]/td/input'
     xpath_acessar = '//*[@id="conteudo"]/div[3]/form/table/tfoot/tr/td/input'
-
+    
     print("Iniciando login...")
     campo_usuario_element = wait.until(EC.presence_of_element_located((By.XPATH, xpath_usuario)))
     campo_usuario_element.send_keys(usuario)
-
+    
+    # Preenche a senha automaticamente (sem pedir no terminal)
     campo_senha_element = wait.until(EC.presence_of_element_located((By.XPATH, xpath_senha)))
     campo_senha_element.send_keys(senha)
-
+    
     navegador.find_element(By.XPATH, xpath_acessar).click()
     print("Login realizado com sucesso!")
     time.sleep(2)
@@ -138,7 +108,7 @@ try:
     xpath_abrir_selecao_unidade = '//*[@id="info-usuario"]/p[3]/a/img'
     xpath_caixa_selecao_unidade = '//*[@id="conteudo"]/form/table/tbody/tr/td[2]/select'
     xpath_botao_voltar_do_relatorio = '//*[@id="relatorio-rodape"]/p/table/tbody/tr/td[1]/a'
-
+    
     print("Iniciando a busca por unidades...")
     click_insistente(xpath_abrir_selecao_unidade)
     caixa_selecao_element = wait.until(EC.presence_of_element_located((By.XPATH, xpath_caixa_selecao_unidade)))
@@ -147,26 +117,29 @@ try:
     print(f"Encontradas {len(nomes_das_unidades)} unidades no total.")
     dados_por_unidade = {}
     total_a_processar = len(nomes_das_unidades)
-
+    
     # --- INÍCIO DO LOOP PRINCIPAL ---
     for i in range(total_a_processar):
         unidade_atual = nomes_das_unidades[i]
 
+        # Filtro de exclusão
         if "SUBSECRETARIA" in unidade_atual.upper():
             print(f">>> IGNORANDO UNIDADE DUPLICADA: {unidade_atual} <<<")
-            continue
+            continue 
 
         try:
             print("-" * 30)
             print(f"Processando: {unidade_atual}")
 
+            # 4.1 SELECIONAR A UNIDADE
             caixa_selecao_element = wait.until(EC.presence_of_element_located((By.XPATH, xpath_caixa_selecao_unidade)))
             select_object = Select(caixa_selecao_element)
             select_object.select_by_index(i)
-
+            
             xpath_botao_alterar_unidade = '//*[@id="conteudo"]/form/table/tfoot/tr/td/input[2]'
             navegador.find_element(By.XPATH, xpath_botao_alterar_unidade).click()
-
+            
+            # 4.2 NAVEGAR ATÉ O RELATÓRIO
             xpath_menu_modulos = '//*[@id="show-modulos-sipac"]'
             xpath_modulo_almoxarifado = '//*[@id="modulos"]/ul[1]/li[3]/a'
             xpath_menu_consultas = '//*[@id="elgen-14"]'
@@ -175,19 +148,20 @@ try:
             click_insistente(xpath_modulo_almoxarifado)
             click_insistente(xpath_menu_consultas)
             click_insistente(xpath_relatorio_inventario)
-
+            
+            # 4.3 GERAR E EXTRAIR OS DADOS
             xpath_gerar_relatorio = '//*[@id="conteudo"]/form/table[2]/tfoot/tr/td/input[1]'
             click_insistente(xpath_gerar_relatorio)
-
+            
             df_final = None
             try:
                 wait_curto = WebDriverWait(navegador, 10)
                 xpath_tabela_de_dados = "//table[.//th[contains(text(), 'Código')]]"
                 tabela_element = wait_curto.until(EC.presence_of_element_located((By.XPATH, xpath_tabela_de_dados)))
-
+                
                 html_da_tabela_correta = tabela_element.get_attribute('outerHTML')
                 df_bruto = pd.read_html(StringIO(html_da_tabela_correta), header=0)[0]
-
+                
                 df_bruto.dropna(subset=['Código'], inplace=True)
                 colunas_desejadas = ['Código', 'Denominação', 'Unid. Medida', 'Saldo', 'Preço*', 'Total']
                 df_final = df_bruto[colunas_desejadas].copy()
@@ -200,14 +174,16 @@ try:
                 print("Relatório vazio. Criando zerado.")
                 dados_vazios = {'Código': [0], 'Denominação': ['SEM MATERIAL'], 'Unid. Medida': ['-'], 'Saldo': [0.0], 'Preço*': [0.0], 'Total': [0.0]}
                 df_final = pd.DataFrame(dados_vazios)
-
+            
+            # 4.4 GUARDAR OS DADOS
             if df_final is not None:
                 dados_por_unidade[unidade_atual] = df_final
-
+            
+            # 4.5 RETORNAR
             click_insistente(xpath_botao_voltar_do_relatorio)
             click_insistente(xpath_abrir_selecao_unidade)
             time.sleep(1)
-
+            
         except Exception as loop_error:
             print(f"Erro na unidade: {loop_error}. Tentando recuperar...")
             try:
@@ -217,7 +193,7 @@ try:
             except Exception:
                 break
             continue
-
+    
     # --- 5. SALVANDO OS DADOS NO FIREBASE ---
     if dados_por_unidade:
         print("Consolidando dados...")
@@ -226,33 +202,43 @@ try:
             nome_coluna_limpo = re.sub(r'[\(\)]', '', nome_unidade).strip()
             df['Unidade'] = nome_coluna_limpo
             lista_de_dfs.append(df)
-
+        
         df_completo = pd.concat(lista_de_dfs, ignore_index=True)
+        
+        # O Firebase Firestore armazena JSONs (Dicionários).
+        # Convertendo o dataframe para uma lista de dicionários.
         registros = df_completo.to_dict(orient='records')
-
+        
         print("Conectando ao Firebase Firestore...")
+        # A credencial deve estar no arquivo firebase_key.json
         cred = credentials.Certificate('firebase_key.json')
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred)
-
+            
         db = firestore.client()
+        
         print(f"Enviando {len(registros)} registros para o Firebase...")
-
+        
         batch = db.batch()
         colecao_ref = db.collection('inventario')
-
+        
         contador = 0
         for item in registros:
+            # Criar um ID seguro para o Firebase com base no código e unidade
             doc_id = f"{item['Código']}_{item['Unidade']}".replace(" ", "_").replace("/", "-")
             doc_ref = colecao_ref.document(str(doc_id))
+            
+            # Adiciona a data da atualização
             item['ultima_atualizacao'] = datetime.now().isoformat()
+            
             batch.set(doc_ref, item, merge=True)
             contador += 1
-
+            
+            # Firestore limita os batches em 500 operações, vamos fazer de 400 em 400
             if contador % 400 == 0:
                 batch.commit()
                 batch = db.batch()
-
+        
         if contador % 400 != 0:
             batch.commit()
 
@@ -264,3 +250,7 @@ except Exception as e:
 finally:
     if navegador:
         navegador.quit()
+    try:
+        display.stop()
+    except Exception:
+        pass

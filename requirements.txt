@@ -1,4 +1,6 @@
-selenium
-pandas
-firebase-admin
-webdriver-manager
+selenium==4.18.1
+pandas==2.2.1
+firebase-admin==6.4.0
+lxml==5.1.0
+undetected-chromedriver==3.5.5
+PyVirtualDisplay==3.0

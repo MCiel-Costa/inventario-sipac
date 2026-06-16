@@ -39,6 +39,14 @@ jobs:
         SIPAC_PASSWORD: ${{ secrets.SIPAC_PASSWORD }}
       run: python robo_inventario.py
 
+    - name: Upload screenshot de diagnóstico
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-screenshot
+        path: debug_screenshot.png
+        if-no-files-found: warn
+
     - name: Limpar credencial do Firebase
       if: always()
       run: rm -f firebase_key.json

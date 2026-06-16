@@ -19,7 +19,6 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 
 import undetected_chromedriver as uc
-from pyvirtualdisplay import Display
 from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 
 print(">>> INICIANDO SCRIPT DE AUTOMAÇÃO (MODO CLOUD/FIREBASE) <<<")
@@ -45,21 +44,20 @@ try:
     # --- 2. CONFIGURAÇÃO E LOGIN ---
     print("Configurando o navegador...")
     
-    # Inicia o display virtual (Xvfb) para que o Chrome pense que tem uma tela real
-    # Isso burla a proteção antibot que detecta --headless
-    display = Display(visible=0, size=(1920, 1080))
-    display.start()
-    
     chrome_options = uc.ChromeOptions()
+    # Usa o novo modo headless nativo do Chrome que burla detecções
+    chrome_options.add_argument('--headless=new')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-gpu')
     chrome_options.add_argument('--window-size=1920,1080')
     chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--blink-settings=imagesEnabled=false') # Não carrega imagens para ser mais rápido
+    chrome_options.add_argument('--blink-settings=imagesEnabled=false') # Não carrega imagens
+    chrome_options.page_load_strategy = 'eager' # Evita timeout esperando o site carregar inteiro
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 
-    navegador = uc.Chrome(options=chrome_options)
+    # use_subprocess previne crash do renderer em máquinas lentas
+    navegador = uc.Chrome(options=chrome_options, use_subprocess=True)
     navegador.set_page_load_timeout(120)
     navegador.implicitly_wait(20)
     wait = WebDriverWait(navegador, 60)
@@ -250,7 +248,3 @@ except Exception as e:
 finally:
     if navegador:
         navegador.quit()
-    try:
-        display.stop()
-    except Exception:
-        pass

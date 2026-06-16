@@ -1,5 +1,5 @@
 # ====================================================================================
-# SCRIPT DE AUTOMAÇÃO (v53 - Versão Automática para Agendador)
+# SCRIPT DE AUTOMAÇÃO (v54 - Versão com Diagnóstico)
 # ====================================================================================
 
 # --- 1. IMPORTAÇÃO DAS BIBLIOTECAS ---
@@ -42,7 +42,7 @@ try:
     URL_PRINCIPAL = 'https://sipac.rn.gov.br/sipac/portal/principal.jsf'
 
     # --- 2. CONFIGURAÇÃO E LOGIN ---
-   print("Configurando o navegador...")
+    print("Configurando o navegador...")
 
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument('--headless=new')
@@ -52,9 +52,9 @@ try:
     chrome_options.add_argument('--window-size=1920,1080')
     chrome_options.add_argument('--disable-extensions')
     chrome_options.add_argument('--blink-settings=imagesEnabled=false')
-    chrome_options.add_argument('--disable-blink-features=AutomationControlled')  # <- esconde que é bot
+    chrome_options.add_argument('--disable-blink-features=AutomationControlled')
     chrome_options.add_argument('--disable-infobars')
-    chrome_options.add_argument('--ignore-certificate-errors')                    # <- ignora erros SSL
+    chrome_options.add_argument('--ignore-certificate-errors')
     chrome_options.add_argument('--allow-running-insecure-content')
     chrome_options.add_argument('--disable-web-security')
     chrome_options.add_experimental_option('excludeSwitches', ['enable-automation'])
@@ -64,18 +64,39 @@ try:
     print("Baixando ChromeDriver compatível...")
     servico = ChromeService(ChromeDriverManager().install())
     navegador = webdriver.Chrome(service=servico, options=chrome_options)
-    
-    # Esconde propriedades que identificam o Selenium
-    navegador.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-        'source': "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
-    })
-    
+
+    try:
+        navegador.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+            'source': "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+        })
+    except Exception:
+        pass
+
     navegador.set_page_load_timeout(120)
     navegador.implicitly_wait(20)
     wait = WebDriverWait(navegador, 60)
 
     print("Acessando a página de login...")
-    navegador.get('https://sipac.rn.gov.br/sipac/?modo=classico')
+    try:
+        navegador.get('https://sipac.rn.gov.br/sipac/?modo=classico')
+    except Exception as e:
+        print(f"Erro ao carregar página (capturado, seguindo para diagnóstico): {e}")
+
+    # ===== BLOCO DE DIAGNÓSTICO TEMPORÁRIO =====
+    try:
+        navegador.save_screenshot('debug_screenshot.png')
+        print("Screenshot de diagnóstico salva: debug_screenshot.png")
+    except Exception as e:
+        print(f"Não foi possível salvar screenshot: {e}")
+
+    try:
+        print(f"DIAGNÓSTICO - Título da página: {navegador.title}")
+        print(f"DIAGNÓSTICO - URL atual: {navegador.current_url}")
+        html_parcial = navegador.page_source[:500]
+        print(f"DIAGNÓSTICO - Primeiros 500 caracteres do HTML: {html_parcial}")
+    except Exception as e:
+        print(f"Não foi possível obter diagnóstico da página: {e}")
+    # ===== FIM DO BLOCO DE DIAGNÓSTICO =====
 
     usuario = os.environ.get('SIPAC_USER')
     senha = os.environ.get('SIPAC_PASSWORD')
